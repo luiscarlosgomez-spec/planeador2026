@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0F172A">
+<title>Planeador EF 2026</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  :root{
+    --bg:#0F172A; --bg2:#1E293B; --bg3:#334155;
+    --text:#F1F5F9; --text2:#94A3B8; --text3:#64748B;
+    --border:rgba(255,255,255,0.1);
+    --c1:#3B82F6; --c2:#10B981; --c3:#EF4444;
+    --gold:#F59E0B; --purple:#8B5CF6;
+    --radius:14px; --gap:10px;
+    --font: 'Georgia', serif;
+    --font2: system-ui, -apple-system, sans-serif;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;}
+  #app{height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+  /* ── HEADER ── */
+  #header{
+    background:linear-gradient(135deg,#1E3A5F,#0F172A);
+    border-bottom:1px solid var(--border);
+    padding:12px 16px;
+    display:flex;align-items:center;gap:10px;
+    min-height:60px;flex-shrink:0;
+  }
+  #header .logo{font-size:22px;}
+  #header .hinfo{flex:1;}
+  #header .htitle{font-size:17px;font-weight:bold;color:#F8FAFC;}
+  #header .hsub{font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;}
+  #header .hdate{font-size:11px;color:var(--c1);margin-top:2px;}
+  #header .hbtn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    border-radius:8px;color:white;padding:6px 10px;cursor:pointer;font-size:18px;display:flex;align-items:center;}
+
+  /* ── VIEWS ── */
+  .view{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .view.active{display:flex;flex-direction:column;}
+
+  /* ── HOME VIEW ── */
+  #v-home{padding:20px 16px;gap:16px;}
+  .status-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 20px;text-align:center;}
+  .status-card .sc-label{font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+  .status-card .sc-date{font-size:16px;font-weight:bold;}
+  .status-card .sc-ctx{margin-top:8px;font-size:12px;padding:4px 12px;border-radius:20px;
+    display:inline-block;font-family:var(--font2);}
+  .sc-ctx.cls{background:rgba(16,185,129,.15);color:#86EFAC;}
+  .sc-ctx.vac{background:rgba(245,158,11,.15);color:#FCD34D;}
+  .sc-ctx.oth{background:rgba(148,163,184,.1);color:#94A3B8;}
+
+  .grade-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .grade-btn{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);
+    padding:20px 12px;cursor:pointer;text-align:center;transition:all .15s;
+    display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .grade-btn:active{transform:scale(.97);}
+  .grade-btn .gb-emoji{font-size:36px;}
+  .grade-btn .gb-label{font-size:15px;font-weight:bold;color:#F8FAFC;}
+  .grade-btn .gb-sub{font-size:10px;color:var(--text3);font-family:var(--font2);}
+  .grade-btn .gb-tema{font-size:10px;margin-top:2px;padding:2px 8px;border-radius:10px;font-family:var(--font2);}
+
+  .section-title{font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;
+    text-align:center;padding:4px 0;}
+
+  .trim-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  .trim-badge{border-radius:20px;padding:5px 14px;font-size:11px;font-family:var(--font2);}
+
+  /* ── SESSION VIEW ── */
+  #v-session{padding:0;}
+  #session-header{padding:10px 14px 0;flex-shrink:0;}
+  #session-scroll{flex:1;overflow-y:auto;padding:10px 14px 20px;-webkit-overflow-scrolling:touch;}
+
+  .trim-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;
+    scrollbar-width:none;-ms-overflow-style:none;}
+  .trim-tabs::-webkit-scrollbar{display:none;}
+  .ttab{flex:0 0 auto;border-radius:20px;padding:5px 14px;font-size:11px;cursor:pointer;
+    border:1.5px solid transparent;font-family:var(--font2);transition:all .15s;}
+
+  .week-nav{display:flex;align-items:center;gap:8px;margin:10px 0;}
+  .wnav-btn{background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+    padding:8px 14px;color:white;cursor:pointer;font-size:15px;font-family:var(--font2);}
+  .wnav-btn:disabled{color:var(--bg3);cursor:not-allowed;}
+  .wnav-info{flex:1;text-align:center;border-radius:12px;padding:9px 8px;}
+  .wnav-info .wn-num{font-size:13px;font-weight:bold;}
+  .wnav-info .wn-rng{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--font2);}
+
+  .accordion{margin-bottom:8px;border-radius:var(--radius);overflow:hidden;
+    border:1px solid var(--border);}
+  .acc-header{width:100%;background:var(--bg2);border:none;padding:13px 14px;cursor:pointer;
+    color:white;display:flex;align-items:center;gap:8px;text-align:left;}
+  .acc-header:active{background:var(--bg3);}
+  .acc-icon{font-size:18px;flex-shrink:0;}
+  .acc-label{flex:1;font-size:13px;font-weight:bold;font-family:var(--font);}
+  .acc-arrow{font-size:12px;opacity:.6;font-family:var(--font2);}
+  .acc-body{background:rgba(255,255,255,.02);padding:12px 14px;
+    border-top:1px solid rgba(255,255,255,.06);display:none;}
+  .acc-body.open{display:block;}
+  .acc-text{font-size:12px;line-height:1.8;color:#CBD5E1;white-space:pre-wrap;font-family:var(--font2);}
+
+  .comp-grid{display:flex;flex-direction:column;gap:10px;}
+  .comp-item .ci-label{font-size:10px;font-weight:bold;letter-spacing:1px;
+    text-transform:uppercase;margin-bottom:3px;font-family:var(--font2);}
+  .comp-item .ci-text{font-size:12px;color:#CBD5E1;line-height:1.6;font-family:var(--font2);}
+
+  .notes-area{width:100%;min-height:80px;background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.15);border-radius:10px;
+    color:#F1F5F9;padding:8px 10px;font-size:12px;line-height:1.6;
+    resize:vertical;font-family:var(--font2);}
+
+  .footer-info{margin:8px 0 0;padding:10px 14px;background:rgba(255,255,255,.03);
+    border-radius:10px;text-align:center;font-size:10px;color:var(--text3);font-family:var(--font2);}
+
+  /* ── CALENDAR VIEW ── */
+  #v-calendar{padding:14px;}
+  .cal-title{font-size:12px;color:var(--text3);text-align:center;margin-bottom:12px;font-family:var(--font2);}
+  .cal-week{display:flex;align-items:center;gap:10px;background:var(--bg2);
+    border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;
+    margin-bottom:6px;cursor:pointer;transition:all .15s;}
+  .cal-week:active{transform:scale(.99);}
+  .cal-wnum{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;font-weight:bold;font-size:13px;flex-shrink:0;font-family:var(--font2);}
+  .cal-winfo{}
+  .cal-wlabel{font-size:13px;font-family:var(--font);}
+  .cal-wrng{font-size:10px;color:var(--text3);margin-top:1px;font-family:var(--font2);}
+  .badge-hoy{background:#22C55E;border-radius:10px;padding:2px 7px;font-size:9px;
+    color:white;margin-left:auto;flex-shrink:0;font-family:var(--font2);}
+  .badge-vac{background:#64748B;border-radius:10px;padding:2px 7px;font-size:9px;
+    color:white;margin-left:auto;flex-shrink:0;font-family:var(--font2);}
+
+  /* ── BOTTOM NAV ── */
+  #bottom-nav{display:flex;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0;}
+  .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;
+    padding:8px 4px 6px;cursor:pointer;border:none;background:transparent;
+    color:var(--text3);transition:color .15s;gap:2px;}
+  .bnav-btn.active{color:var(--c1);}
+  .bnav-icon{font-size:20px;}
+  .bnav-label{font-size:9px;text-transform:uppercase;letter-spacing:.8px;font-family:var(--font2);}
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar{width:3px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="logo">🏃</div>
+    <div class="hinfo">
+      <div class="htitle">Planeador EF 2026</div>
+      <div class="hsub">IENC · Sede San Nicolás · Soacha</div>
+      <div class="hdate" id="hdate-display">Cargando...</div>
+    </div>
+    <button class="hbtn" id="btn-back-home" title="Inicio" style="display:none" onclick="goHome()">🏠</button>
+    <button class="hbtn" id="btn-calendar-toggle" title="Calendario" style="display:none">📅</button>
+  </div>
+
+  <!-- VIEW: HOME -->
+  <div class="view active" id="v-home">
+    <div class="status-card" id="status-card">
+      <div class="sc-label">Hoy</div>
+      <div class="sc-date" id="sc-date-text">—</div>
+      <div class="sc-ctx oth" id="sc-ctx-text">Calculando...</div>
+    </div>
+    <div class="section-title">Seleccionar Grado</div>
+    <div class="grade-grid" id="grade-grid"><!-- injected --></div>
+    <div class="section-title">Períodos académicos</div>
+    <div class="trim-badges" id="trim-badges"><!-- injected --></div>
+    <div style="padding:10px 0 4px;text-align:center;font-size:10px;color:#334155;font-family:system-ui">
+      Luis Carlos Gómez Torres · 100 min/semana
+    </div>
+  </div>
+
+  <!-- VIEW: SESSION -->
+  <div class="view" id="v-session">
+    <div id="session-header">
+      <div class="trim-tabs" id="trim-tabs"><!-- injected --></div>
+      <div class="week-nav" id="week-nav"><!-- injected --></div>
+    </div>
+    <div id="session-scroll"><!-- injected --></div>
+  </div>
+
+  <!-- VIEW: CALENDAR -->
+  <div class="view" id="v-calendar">
+    <div class="cal-title" id="cal-title">Calendario</div>
+    <div id="cal-weeks"><!-- injected --></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottom-nav">
+    <button class="bnav-btn active" id="nav-home" onclick="goHome()">
+      <span class="bnav-icon">🏠</span><span class="bnav-label">Inicio</span>
+    </button>
+    <button class="bnav-btn" id="nav-session" onclick="goSession()" style="display:none">
+      <span class="bnav-icon">📋</span><span class="bnav-label">Clase</span>
+    </button>
+    <button class="bnav-btn" id="nav-calendar" onclick="goCalendar()" style="display:none">
+      <span class="bnav-icon">📅</span><span class="bnav-label">Calendario</span>
+    </button>
+  </div>
+
+</div>
+
+<script>
+/* ═══════ DATA ═══════ */
+// ═══════════════════════════════════════════════
+// CALENDARIO ACADÉMICO 2026
+// ═══════════════════════════════════════════════
+const CALENDAR = {
+  T1: {
+    label: "I Trimestre", color: "#3B82F6", dark: "#1D4ED8",
+    tema: { sexto:"Gimnasia", noveno:"Balonmano", decimo:"Adm. Deportiva", undecimo:"Adm. Deportiva" },
+    weeks: [
+      {n:1, rng:"26 ene – 1 feb",  ms:new Date(2026,0,26), me:new Date(2026,1,1)},
+      {n:2, rng:"2 – 8 feb",       ms:new Date(2026,1,2),  me:new Date(2026,1,8)},
+      {n:3, rng:"9 – 15 feb",      ms:new Date(2026,1,9),  me:new Date(2026,1,15)},
+      {n:4, rng:"16 – 22 feb",     ms:new Date(2026,1,16), me:new Date(2026,1,22)},
+      {n:5, rng:"23 feb – 1 mar",  ms:new Date(2026,1,23), me:new Date(2026,2,1)},
+      {n:6, rng:"2 – 8 mar",       ms:new Date(2026,2,2),  me:new Date(2026,2,8)},
+      {n:7, rng:"9 – 15 mar",      ms:new Date(2026,2,9),  me:new Date(2026,2,15)},
+      {n:8, rng:"16 – 22 mar",     ms:new Date(2026,2,16), me:new Date(2026,2,22)},
+      {n:9, rng:"23 – 29 mar",     ms:new Date(2026,2,23), me:new Date(2026,2,29)},
+      // Vacaciones 30 mar - 5 abr
+      {n:10,rng:"6 – 12 abr",      ms:new Date(2026,3,6),  me:new Date(2026,3,12)},
+      {n:11,rng:"13 – 19 abr",     ms:new Date(2026,3,13), me:new Date(2026,3,19)},
+      {n:12,rng:"20 – 26 abr",     ms:new Date(2026,3,20), me:new Date(2026,3,26)},
+      {n:13,rng:"27 abr – 3 may",  ms:new Date(2026,3,27), me:new Date(2026,4,3)},
+      {n:14,rng:"4 – 10 may",      ms:new Date(2026,4,4),  me:new Date(2026,4,10)},
+    ],
+    vacStart: new Date(2026,2,30), vacEnd: new Date(2026,3,5),
+    start: new Date(2026,0,26), end: new Date(2026,4,10)
+  },
+  T2: {
+    label: "II Trimestre", color: "#10B981", dark: "#047857",
+    tema: { sexto:"Atletismo", noveno:"Voleibol", decimo:"Fútbol de Salón", undecimo:"Juego y Lúdica" },
+    weeks: [
+      {n:1, rng:"11 – 17 may",     ms:new Date(2026,4,11), me:new Date(2026,4,17)},
+      {n:2, rng:"18 – 24 may",     ms:new Date(2026,4,18), me:new Date(2026,4,24)},
+      {n:3, rng:"25 – 31 may",     ms:new Date(2026,4,25), me:new Date(2026,4,31)},
+      {n:4, rng:"1 – 7 jun",       ms:new Date(2026,5,1),  me:new Date(2026,5,7)},
+      {n:5, rng:"8 – 14 jun",      ms:new Date(2026,5,8),  me:new Date(2026,5,14)},
+      {n:6, rng:"15 – 21 jun",     ms:new Date(2026,5,15), me:new Date(2026,5,21)},
+      // Vacaciones 22 jun - 12 jul
+      {n:7, rng:"13 – 19 jul",     ms:new Date(2026,6,13), me:new Date(2026,6,19)},
+      {n:8, rng:"20 – 26 jul",     ms:new Date(2026,6,20), me:new Date(2026,6,26)},
+      {n:9, rng:"27 jul – 2 ago",  ms:new Date(2026,6,27), me:new Date(2026,7,2)},
+      {n:10,rng:"3 – 9 ago",       ms:new Date(2026,7,3),  me:new Date(2026,7,9)},
+      {n:11,rng:"10 – 16 ago",     ms:new Date(2026,7,10), me:new Date(2026,7,16)},
+      {n:12,rng:"17 – 23 ago",     ms:new Date(2026,7,17), me:new Date(2026,7,23)},
+      {n:13,rng:"24 – 30 ago",     ms:new Date(2026,7,24), me:new Date(2026,7,30)},
+    ],
+    vacStart: new Date(2026,5,22), vacEnd: new Date(2026,6,12),
+    start: new Date(2026,4,11), end: new Date(2026,7,30)
+  },
+  T3: {
+    label: "III Trimestre", color: "#EF4444", dark: "#B91C1C",
+    tema: { sexto:"Futsal", noveno:"Baloncesto", decimo:"Voleibol – Torneos", undecimo:"Cualidades Físicas" },
+    weeks: [
+      {n:1, rng:"31 ago – 6 sep",  ms:new Date(2026,7,31), me:new Date(2026,8,6)},
+      {n:2, rng:"7 – 13 sep",      ms:new Date(2026,8,7),  me:new Date(2026,8,13)},
+      {n:3, rng:"14 – 20 sep",     ms:new Date(2026,8,14), me:new Date(2026,8,20)},
+      {n:4, rng:"21 – 27 sep",     ms:new Date(2026,8,21), me:new Date(2026,8,27)},
+      {n:5, rng:"28 sep – 4 oct",  ms:new Date(2026,8,28), me:new Date(2026,9,4)},
+      // Vacaciones 5 - 11 oct
+      {n:6, rng:"12 – 18 oct",     ms:new Date(2026,9,12), me:new Date(2026,9,18)},
+      {n:7, rng:"19 – 25 oct",     ms:new Date(2026,9,19), me:new Date(2026,9,25)},
+      {n:8, rng:"26 oct – 1 nov",  ms:new Date(2026,9,26), me:new Date(2026,10,1)},
+      {n:9, rng:"2 – 8 nov",       ms:new Date(2026,10,2), me:new Date(2026,10,8)},
+      {n:10,rng:"9 – 15 nov",      ms:new Date(2026,10,9), me:new Date(2026,10,15)},
+      {n:11,rng:"16 – 22 nov",     ms:new Date(2026,10,16),me:new Date(2026,10,22)},
+      {n:12,rng:"23 – 29 nov",     ms:new Date(2026,10,23),me:new Date(2026,10,29)},
+      {n:13,rng:"30 nov – 4 dic",  ms:new Date(2026,11,30),me:new Date(2026,11,4)},
+    ],
+    vacStart: new Date(2026,9,5), vacEnd: new Date(2026,9,11),
+    start: new Date(2026,7,31), end: new Date(2026,11,4)
+  }
+};
+
+// ═══════════════════════════════════════════════
+// GRADOS
+// ═══════════════════════════════════════════════
+const GRADES = [
+  { id:"sexto",    label:"Grado 6°",  sub:"605 / 606",   emoji:"🤸", color:"#3B82F6", bg:"rgba(59,130,246,0.12)" },
+  { id:"noveno",   label:"Grado 9°",  sub:"906 / 907",   emoji:"🤾", color:"#F59E0B", bg:"rgba(245,158,11,0.12)" },
+  { id:"decimo",   label:"Grado 10°", sub:"1005 / 1006", emoji:"📋", color:"#10B981", bg:"rgba(16,185,129,0.12)" },
+  { id:"undecimo", label:"Grado 11°", sub:"1105 / 1106", emoji:"🏆", color:"#8B5CF6", bg:"rgba(139,92,246,0.12)" },
+];
+
+// ═══════════════════════════════════════════════
+// COMPETENCIAS (4 saberes × 4 grados × 3 trimestres)
+// ═══════════════════════════════════════════════
+const COMP = {
+  sexto:{
+    T1:{sp:"Reconoce habilidades físicas propias y las relaciona con los patrones básicos de movimiento presentes en la gimnasia.",src:"Ejecuta esquemas y figuras gimnásticas individuales y colectivas aplicando los fundamentos básicos trabajados.",scm:"Expresa con claridad las características de los movimientos gimnásticos de forma oral y escrita.",scv:"Valora el esfuerzo propio y el de sus compañeros, participando con respeto y responsabilidad en todas las prácticas."},
+    T2:{sp:"Identifica los fundamentos básicos del atletismo y las características de las diferentes pruebas de pista y campo.",src:"Realiza pruebas de pista y campo aplicando los fundamentos técnicos básicos del atletismo con progresiva eficiencia.",scm:"Explica las técnicas de las pruebas atléticas y comunica sus resultados de forma oral y escrita.",scv:"Participa con actitud positiva y respeta las normas del juego limpio en todas las actividades atléticas."},
+    T3:{sp:"Reconoce los patrones de movimiento propios del futsal y los relaciona con sus fundamentos técnicos básicos.",src:"Ejecuta en juegos predeportivos y situaciones reales los fundamentos técnicos básicos del futsal.",scm:"Expresa con claridad las reglas básicas del futsal y comunica decisiones de juego de manera asertiva.",scv:"Participa con fairplay, respeto por las reglas y valoración permanente del trabajo en equipo."}
+  },
+  noveno:{
+    T1:{sp:"Identifica y describe los fundamentos técnicos y tácticos básicos del balonmano y su aplicación en el juego real.",src:"Ejecuta con progresiva eficiencia los fundamentos técnicos del balonmano en situaciones reales de juego.",scm:"Explica con claridad los fundamentos del balonmano y comunica decisiones de juego de manera asertiva.",scv:"Participa con responsabilidad, fair play y espíritu de equipo en todas las actividades del trimestre."},
+    T2:{sp:"Reconoce y clasifica los fundamentos técnicos del voleibol y los relaciona con sistemas de juego básicos.",src:"Ejecuta con progresiva eficiencia los fundamentos técnicos del voleibol en situaciones reales de juego.",scm:"Explica posiciones, rotaciones y sistemas de recepción y comunica decisiones de juego con claridad.",scv:"Participa con actitud positiva, respeta las rotaciones y demuestra solidaridad con sus compañeros."},
+    T3:{sp:"Comprende y analiza los fundamentos técnico-tácticos del baloncesto relacionándolos con situaciones reales.",src:"Ejecuta los fundamentos técnicos básicos del baloncesto con progresiva eficiencia en situaciones de juego.",scm:"Explica las reglas del baloncesto, describe situaciones de juego y argumenta decisiones tácticas con claridad.",scv:"Demuestra respeto, trabajo en equipo y espíritu deportivo en todas las actividades del trimestre."}
+  },
+  decimo:{
+    T1:{sp:"Analiza y clasifica conceptos básicos de administración deportiva aplicándolos a la organización de eventos.",src:"Ejecuta actividades prácticas de organización: fixtures, roles y protocolos de eventos deportivos escolares.",scm:"Expone propuestas de eventos con claridad y argumenta decisiones organizativas ante el grupo.",scv:"Asume con responsabilidad los roles asignados en la organización y demuestra liderazgo positivo."},
+    T2:{sp:"Domina las reglas del fútbol de salón y los sistemas de competencia, aplicándolos en torneos.",src:"Aplica fundamentos técnicos y tácticos del fútbol de salón en juego real con roles rotativos.",scm:"Expone decisiones arbitrales con argumentos claros y comunica señales reglamentarias con precisión.",scv:"Asume con responsabilidad los roles de árbitro, planillero y organizador, promoviendo el fair play."},
+    T3:{sp:"Diferencia sistemas de competencia y señales de jueces del voleibol para planificar mini torneos.",src:"Aplica fundamentos técnicos del voleibol y asume roles de árbitro y planillero con eficiencia.",scm:"Comunica con precisión las señales arbitrales del voleibol y presenta informes de torneo con claridad.",scv:"Asume con liderazgo y responsabilidad los roles organizativos en el mini torneo de voleibol."}
+  },
+  undecimo:{
+    T1:{sp:"Analiza las necesidades deportivas de la institución y formula proyectos organizativos pertinentes y viables.",src:"Dirige con eficiencia la planeación, ejecución y evaluación de proyectos recreo-deportivos institucionales.",scm:"Expone propuestas y planes de trabajo con argumentos sólidos y comunica con liderazgo ante el grupo.",scv:"Demuestra liderazgo, responsabilidad y trabajo en equipo en la gestión de eventos institucionales."},
+    T2:{sp:"Comprende el juego, la lúdica y la recreación como fundamentos del desarrollo psicosocial integral.",src:"Diseña y dirige actividades lúdico-recreativas con objetivos pedagógicos claros y criterios éticos.",scm:"Expone con argumentos sólidos el valor del juego y comunica de forma efectiva en sesiones dirigidas.",scv:"Lidera actividades lúdicas con sentido ético, respeto por la diversidad y promoción del juego limpio."},
+    T3:{sp:"Comprende las cualidades físicas y las relaciona con los principios del entrenamiento y la salud integral.",src:"Diseña y ejecuta un plan de entrenamiento individualizado basado en tests de condición física.",scm:"Expone con argumentos técnicos su plan de entrenamiento y comunica los resultados del proceso.",scv:"Demuestra disciplina, perseverancia y respeto por los ritmos individuales de sus compañeros."}
+  }
+};
+
+// ═══════════════════════════════════════════════
+// SESIONES
+// Estructura por sesión: [evidencia, objetivo, actividades, evaluacion, nivelacion, observaciones]
+// ═══════════════════════════════════════════════
+
+// ────────────────────────────────────────────────────────
+// SEXTO
+// ────────────────────────────────────────────────────────
+const SEX_T1 = [
+  ["Nota en cuaderno: definición, tipos y beneficios de la gimnasia. Participación activa en mesa redonda.","Identificar qué es la gimnasia, su historia y su importancia para el desarrollo corporal.","① Calentamiento: trote y movilidad articular (10 min)\n② Exposición oral: historia y tipos de gimnasia (25 min)\n③ Video corto: ejemplos de gimnasia artística y aeróbica (15 min)\n④ Mesa redonda: beneficios identificados (20 min)\n⑤ Registro en cuaderno (20 min)\n⑥ Cierre y reflexión (10 min)\n\n📦 Recursos: cuaderno, tablero, patio.","Observación de participación. Revisión de nota en cuaderno (Saber Pensar / Saber Comunicar).","Entregar resumen escrito de 10 líneas sobre qué es la gimnasia y sus beneficios.","Estudiantes con limitación física participan en mesa redonda y registro desde la banca."],
+  ["Participación activa en circuito de estaciones. Descripción oral de al menos 3 patrones ejecutados.","Identificar y ejecutar los patrones básicos de movimiento (locomoción y manipulación) en circuitos.","① Calentamiento articular: movimientos segmentarios (10 min)\n② Explicación de patrones: caminar, correr, saltar, lanzar, rodar, girar (15 min)\n③ Circuito por estaciones (40 min)\n④ Juego integrador: combina 3 patrones (25 min)\n⑤ Cierre oral: descripción de patrones realizados (10 min)\n\n📦 Recursos: conos, aros, balones de espuma, patio.","Lista de chequeo de ejecución por estación. Autoevaluación oral al cierre.","Realizar en casa video de 3 patrones básicos y describirlos por escrito en el cuaderno.","Adaptar cada estación con variantes de menor exigencia para estudiantes con movilidad reducida."],
+  ["Posiciones básicas ejecutadas con apoyo del docente. Anotación en cuaderno.","Reconocer y ejecutar las posiciones básicas de la gimnasia: vela, plancha, estrella y equilibrios.","① Calentamiento dinámico (10 min)\n② Demostración de cada posición básica (15 min)\n③ Práctica guiada por parejas (35 min)\n④ Circuito de posiciones por estaciones (30 min)\n⑤ Cierre: dificultades y compromisos de mejora (10 min)\n\n📦 Recursos: colchonetas si hay, patio, tarjetas descriptivas.","Observación directa. Heteroevaluación entre parejas (Saber Resolver / Saber Convivir).","Practicar vela y plancha en casa y traer descripción escrita de cómo las realizó.","Para estudiantes con dificultades motrices: adaptar posiciones a nivel de silla o con apoyo."],
+  ["Ejecución de rollo adelante y rodada lateral con postura controlada. Lista de chequeo del docente.","Ejecutar rodadas y el rollo adelante aplicando principios de seguridad y control corporal.","① Activación corporal: movilidad de columna y cuello (10 min)\n② Principios de seguridad en rodadas y rollos (10 min)\n③ Práctica progresiva: rodada lateral → rollo con ayuda → rollo autónomo (40 min)\n④ Circuito mixto: posiciones + rodadas encadenadas (30 min)\n⑤ Retroalimentación (10 min)\n\n📦 Recursos: colchonetas o zonas blandas, conos.","Lista de chequeo individual de técnica (Saber Resolver). Coevaluación por parejas.","Practicar rodada lateral en casa sobre superficie blanda y registrar en cuaderno.","Estudiantes con contraindicaciones observan y describen el proceso de sus compañeros."],
+  ["Cuadro comparativo en cuaderno: calentamiento general vs. específico.","Diferenciar y aplicar el calentamiento general y específico previo a la práctica gimnástica.","① Indagación: ¿para qué sirve el calentamiento? (10 min)\n② Explicación: general vs. específico con ejemplos (20 min)\n③ Práctica de calentamiento general (20 min)\n④ Práctica de calentamiento específico para gimnasia (30 min)\n⑤ Registro en cuaderno: cuadro comparativo (20 min)\n\n📦 Recursos: cuaderno, patio.","Revisión del cuadro comparativo (Saber Pensar). Observación de ejecución.","Diseñar en casa una rutina de calentamiento de 5 minutos y presentarla por escrito.","Énfasis en prevención de lesiones como motivación para el calentamiento."],
+  ["Secuencia de 4 movimientos gimnásticos construida y ejecutada. Registro en cuaderno.","Construir y ejecutar una secuencia individual de 4 elementos gimnásticos con fluidez.","① Calentamiento específico (10 min)\n② Repaso de elementos aprendidos (20 min)\n③ Presentación de la tarea: diseñar secuencia de 4 movimientos (10 min)\n④ Construcción y ensayo individual (40 min)\n⑤ Presentación voluntaria y retroalimentación (20 min)\n\n📦 Recursos: patio, conos, cuaderno.","Rúbrica: postura, fluidez y control (Saber Resolver). Autoevaluación escrita.","Practicar la secuencia en casa y describir cada elemento con sus correcciones.","Respetar los ritmos individuales; no comparar ejecuciones entre estudiantes."],
+  ["Figura gimnástica en pareja construida y ejecutada con equilibrio.","Construir figuras gimnásticas simples en parejas, desarrollando confianza y comunicación.","① Dinámica de confianza: apoyo entre parejas (15 min)\n② Explicación: base y volante en figuras de pareja (15 min)\n③ Práctica guiada de 3 figuras en pareja (45 min)\n④ Presentación ante el grupo (15 min)\n⑤ Coevaluación y reflexión (10 min)\n\n📦 Recursos: patio, colchonetas, tarjetas de referencia.","Observación: equilibrio y comunicación (Saber Convivir / Saber Resolver). Coevaluación.","Practicar en casa con un familiar una figura simple de apoyo y describirla.","Garantizar compatibilidad de peso y condición física en la asignación de parejas."],
+  ["Figura grupal (3–4 personas) ejecutada con sincronización. Coevaluación grupal.","Ejecutar figuras gimnásticas grupales asumiendo roles diferenciados con coordinación colectiva.","① Calentamiento lúdico grupal (10 min)\n② Explicación de roles: base, volante, apoyo (15 min)\n③ Asignación de roles y ensayo (50 min)\n④ Presentación de figuras grupales (15 min)\n⑤ Evaluación colaborativa (10 min)\n\n📦 Recursos: patio, colchonetas.","Rúbrica grupal: coordinación, roles y seguridad. Coevaluación grupal.","Crear plan escrito de mejora para la figura practicada.","El docente supervisa permanentemente la seguridad en figuras grupales."],
+  ["Secuencia grupal creativa presentada ante el grupo.","Diseñar y ejecutar un esquema gimnástico colectivo con elementos creativos elegidos por el grupo.","① Activación creativa con música (10 min)\n② Diseño del esquema: mínimo 5 elementos grupales (10 min)\n③ Creación y ensayo por grupos (50 min)\n④ Presentaciones ante el grupo (20 min)\n⑤ Retroalimentación y ajustes (10 min)\n\n📦 Recursos: patio, música (si hay), colchonetas.","Rúbrica: creatividad, técnica y trabajo en equipo.","Revisar el esquema y proponer por escrito una modificación que lo mejore.","Valorar la creatividad y el trabajo colaborativo por encima de la perfección técnica."],
+  ["Presentación final del esquema grupal. Participación en coevaluación.","Presentar el esquema gimnástico grupal con fluidez, precisión técnica y expresión corporal.","① Calentamiento previo (15 min)\n② Últimos ensayos por grupos (25 min)\n③ Presentaciones finales (45 min)\n④ Coevaluación estructurada (10 min)\n⑤ Cierre del proceso (5 min)\n\n📦 Recursos: patio, rúbrica de coevaluación.","Rúbrica de presentación: técnica, expresión y equipo. Coevaluación.","Para quienes no presenten: descripción escrita de cada elemento del esquema.","Generar ambiente de respeto y motivación durante las presentaciones."],
+  ["Cuaderno con notas organizadas. Participación en retroalimentación.","Reflexionar sobre el proceso de aprendizaje en gimnasia e identificar fortalezas y aspectos a mejorar.","① Revisión de cuadernos y registros del trimestre (20 min)\n② Plenaria: ¿qué aprendimos? ¿qué fue difícil? ¿qué mejoré? (25 min)\n③ Retroalimentación docente (25 min)\n④ Autoevaluación escrita por los cuatro saberes (20 min)\n⑤ Cierre motivacional (10 min)\n\n📦 Recursos: cuaderno, ficha de autoevaluación.","Autoevaluación escrita por los 4 saberes. Revisión de cuaderno.","Elaborar un plan personal de mejora con acciones concretas.","La autoevaluación es formativa y contribuye a la calificación del periodo."],
+  ["Prueba teórica resuelta. Participación en evaluación práctica individual.","Demostrar los aprendizajes del trimestre mediante prueba práctica y teórica.","① Calentamiento previo (10 min)\n② Evaluación práctica individual: secuencia seleccionada (45 min)\n③ Prueba teórica escrita (30 min)\n④ Autoevaluación y coevaluación (15 min)\n\n📦 Recursos: rúbrica, prueba escrita, patio.","Rúbrica práctica (Saber Resolver). Prueba escrita (Saber Pensar). Auto y coevaluación.","Práctica adicional de los elementos con mayor dificultad. Prueba de recuperación.","La evaluación práctica se adapta a las capacidades individuales de cada estudiante."],
+  ["Participación en actividades lúdicas integradoras. Cuaderno al día.","Consolidar los aprendizajes del trimestre con actividades integradoras lúdicas.","① Actividad lúdica: juegos con elementos gimnásticos (40 min)\n② Repaso participativo del trimestre (20 min)\n③ Presentación de avances de nivelación (25 min)\n④ Organización final del cuaderno (10 min)\n⑤ Cierre (5 min)\n\n📦 Recursos: patio, materiales disponibles.","Observación de participación. Revisión final de cuaderno.","Entrega definitiva de actividades de nivelación pendientes.","Ambiente motivador para cerrar el primer trimestre positivamente."],
+  ["Entrega de nivelaciones. Reflexión oral final del trimestre.","Cerrar el trimestre con retroalimentación final y proyección hacia el siguiente periodo.","① Entrega de nivelaciones y actividades complementarias (30 min)\n② Retroalimentación docente: fortalezas y proyección T2 (20 min)\n③ Presentación del tema T2: Atletismo (15 min)\n④ Reflexión oral: compromisos para el siguiente trimestre (20 min)\n⑤ Cierre (15 min)\n\n📦 Recursos: cuaderno, notas de seguimiento.","Verificación de nivelaciones. Participación en reflexión final.","Revisión final de compromisos y acuerdo de fecha límite.","Informar sobre el tema y expectativas del Trimestre II."]
+];
+
+const SEX_T2 = [
+  ["Nota en cuaderno: historia del atletismo, pruebas y clasificación.","Identificar el origen, evolución e importancia del atletismo y sus principales disciplinas.","① Activación general (10 min)\n② Exposición: historia y pruebas del atletismo (25 min)\n③ Video: pruebas en Juegos Olímpicos (15 min)\n④ Clasificación participativa: carreras / saltos / lanzamientos (20 min)\n⑤ Registro en cuaderno (20 min)\n⑥ Cierre (10 min)\n\n📦 Recursos: cuaderno, tablero, patio.","Revisión de cuaderno (Saber Pensar). Participación en clasificación.","Investigar en casa 3 pruebas atléticas y describirlas en el cuaderno.","Conectar el atletismo con experiencias motrices previas de los estudiantes."],
+  ["Participación en práctica de velocidad. Registro de tiempo en 40 metros.","Reconocer y ejecutar los fundamentos técnicos de la carrera de velocidad: salida, aceleración y postura.","① Calentamiento específico (15 min)\n② Técnica: postura de salida baja y carrera (15 min)\n③ Práctica de salidas con señal oral (30 min)\n④ Prueba de 40 metros: registro de tiempos (25 min)\n⑤ Reflexión técnica (15 min)\n\n📦 Recursos: conos, cronómetro, patio.","Lista de chequeo de técnica de carrera. Registro de tiempos (autoevaluación).","Practicar salidas de pie en casa y describir la técnica por escrito.","Respetar diferencias de velocidad; valorar la mejora personal."],
+  ["Participación en test de resistencia. Registro de resultados en cuaderno.","Identificar diferencias entre velocidad y resistencia y aplicar ritmo en carrera de fondo.","① Calentamiento aeróbico (12 min)\n② Diferencias entre velocidad y resistencia (15 min)\n③ Carrera continua 8 minutos a ritmo propio (25 min)\n④ Test inicial de resistencia (30 min)\n⑤ Registro y reflexión (18 min)\n\n📦 Recursos: conos, cronómetro, patio.","Técnica de carrera continua (Saber Resolver). Registro de resultados.","Caminar o trotar en casa 10 minutos y registrar cómo se sintió.","Participar a ritmo propio sin comparar resultados."],
+  ["Participación en práctica de salto largo. Registro de distancia alcanzada.","Ejecutar el salto largo con carrera de impulso: impulso, vuelo y caída.","① Calentamiento: saltos, skipping, movilidad de cadera (15 min)\n② Técnica: carrera de impulso, despegue, vuelo y caída (15 min)\n③ Práctica progresiva (40 min)\n④ Medición y registro de distancias (20 min)\n⑤ Retroalimentación (10 min)\n\n📦 Recursos: zona blanda, cinta métrica, conos.","Lista de chequeo: impulso, despegue y caída. Registro de mejora personal.","Practicar saltos desde parado en casa y medir con pasos.","Enfatizar la caída segura para prevenir lesiones."],
+  ["Ejecución de salto alto con técnica básica (tijera). Lista de chequeo.","Ejecutar variantes básicas del salto alto reconociendo la técnica fundamental.","① Calentamiento: saltos cortos, movilidad de cadera (15 min)\n② Técnica del salto alto con demostración (15 min)\n③ Práctica de tijera sobre obstáculo bajo (35 min)\n④ Práctica libre con correcciones (25 min)\n⑤ Reflexión (10 min)\n\n📦 Recursos: cuerda o varilla baja, colchoneta, conos.","Lista de chequeo: carrera, despegue y vuelo. Coevaluación.","Practicar el salto de tijera en casa sobre una línea en el piso.","Iniciar con alturas de 20–30 cm y aumentar progresivamente."],
+  ["Participación en práctica de lanzamiento. Registro de distancia alcanzada.","Ejecutar el lanzamiento frontal y lateral con postura, dirección y fuerza.","① Calentamiento: movilidad de hombros, muñecas y tronco (15 min)\n② Técnica de lanzamiento frontal y lateral (15 min)\n③ Práctica de lanzamiento frontal (30 min)\n④ Práctica de lanzamiento lateral (25 min)\n⑤ Medición y registro (10 min)\n⑥ Cierre (5 min)\n\n📦 Recursos: pelotas de béisbol, balones, conos, cinta métrica.","Lista de chequeo de postura y dirección. Registro de distancias.","Practicar lanzamientos en casa y registrar distancias.","Definir zonas de lanzamiento y espera para garantizar la seguridad."],
+  ["Participación en relevos con pase del testigo en zona reglamentaria.","Participar en relevos aplicando la técnica básica del pase del testigo.","① Calentamiento en grupos (10 min)\n② Reglamento de relevos y técnica del pase (15 min)\n③ Práctica: parado → caminando → trotando (25 min)\n④ Carreras de relevos 4×50m (35 min)\n⑤ Reflexión sobre trabajo en equipo (15 min)\n\n📦 Recursos: testigos o conos pequeños, patio.","Observación del pase y técnica. Actitud en competencia.","Diagrama del proceso del pase con zona de cambio en cuaderno.","Insistir en el fair play y respeto entre equipos."],
+  ["Participación en mini-heptatlón. Registro de resultados en tabla.","Combinar carrera y salto en pruebas integradas aplicando fundamentos técnicos.","① Calentamiento (10 min)\n② Presentación del mini-heptatlón (10 min)\n③ Estaciones: carrera 40m + salto largo + salto alto (55 min)\n④ Registro de resultados (15 min)\n⑤ Reflexión: ¿en qué prueba me destaco? (10 min)\n\n📦 Recursos: conos, cinta, cronómetro, cuerda, tabla.","Registro por estación. Participación (Saber Convivir).","Practicar en casa la prueba de menor resultado.","El mini-heptatlón es formativo; el objetivo es participar y mejorar."],
+  ["Registro comparativo de resultados. Análisis escrito del desempeño.","Combinar lanzamiento y carrera, registrando y analizando los resultados.","① Calentamiento (10 min)\n② Prueba integrada: lanzamiento + carrera 60m (40 min)\n③ Registro en tabla personal (15 min)\n④ Análisis en parejas: comparar con sesión anterior (20 min)\n⑤ Reflexión escrita: ¿qué mejoré? (15 min)\n\n📦 Recursos: pelotas, conos, tabla, cuaderno.","Análisis escrito (Saber Pensar). Comparación con pares (Saber Comunicar).","Plan de 3 acciones para mejorar en las pruebas.","Valorar el progreso individual respecto al desempeño inicial."],
+  ["Participación en simulación con roles. Registro de señales arbitrales.","Reconocer señales del juez, zonas y criterios de nulidad en pruebas atléticas.","① Calentamiento (10 min)\n② Señales y criterios de nulidad (20 min)\n③ Simulación con roles rotativos: atleta, juez, anotador (50 min)\n④ Debate sobre decisiones arbitrales (15 min)\n⑤ Cierre (5 min)\n\n📦 Recursos: tarjetas de señales, silbato, tablas.","Identificación de señales y decisiones arbitrales.","Dibujar 5 señales del juez y explicar qué indican.","El arbitraje desarrolla pensamiento crítico y respeto."],
+  ["Participación en mini-atletismo con roles de atleta, juez y anotador.","Organizar y participar en estaciones asumiendo roles rotativos.","① Calentamiento (10 min)\n② Asignación de roles rotativos (10 min)\n③ Mini-atletismo por estaciones, rotación cada 15 min (60 min)\n④ Socialización: aprendizajes desde cada rol (20 min)\n\n📦 Recursos: conos, cronómetro, planillas, silbato, cinta.","Desempeño en cada rol (Saber Resolver / Saber Comunicar / Saber Convivir).","Informe del rol de juez: decisiones y criterios aplicados.","Rotar roles garantiza que todos experimenten las tres perspectivas."],
+  ["Evaluación práctica de prueba elegida. Prueba escrita de fundamentos.","Demostrar aprendizajes del trimestre mediante evaluación práctica y teórica.","① Calentamiento (10 min)\n② Evaluación práctica: prueba elegida por el estudiante (40 min)\n③ Prueba escrita: fundamentos y reglamento (30 min)\n④ Auto y coevaluación (15 min)\n⑤ Retroalimentación y cierre (5 min)\n\n📦 Recursos: rúbrica, prueba escrita, materiales de atletismo.","Rúbrica práctica (Saber Resolver). Prueba escrita (Saber Pensar). Auto y coevaluación.","Práctica guiada en la prueba con menor desempeño. Nueva evaluación.","La elección de la prueba genera autonomía y motivación."],
+  ["Participación en actividades recreativas de cierre del T2.","Cerrar el trimestre con actividades integradoras y reconocimiento del proceso.","① Actividad lúdica con fundamentos del atletismo (40 min)\n② Reconocimiento de logros del grupo (15 min)\n③ Retroalimentación final del T2 (20 min)\n④ Proyección hacia T3: Futsal (15 min)\n⑤ Cierre (10 min)\n\n📦 Recursos: patio, materiales disponibles.","Participación (Saber Convivir). Reflexión del trimestre.","Entrega de nivelaciones pendientes del trimestre.","Celebrar los logros colectivos e individuales."]
+];
+
+const SEX_T3 = [
+  ["Nota en cuaderno: historia, reglamento básico y dimensiones del campo de futsal.","Reconocer la historia, el reglamento básico y las dimensiones del campo de futsal.","① Exploración: ¿qué saben del futsal? (10 min)\n② Exposición: historia, diferencias con fútbol, reglamento (25 min)\n③ Diagrama del campo: dimensiones y zonas (15 min)\n④ Registro en cuaderno (20 min)\n⑤ Juego libre de exploración (20 min)\n⑥ Cierre (10 min)\n\n📦 Recursos: cuaderno, tablero, balón, patio.","Revisión de cuaderno (Saber Pensar). Participación en exploración.","Buscar en casa 5 reglas básicas del futsal y registrarlas.","Conectar el futsal con experiencias de juego previas."],
+  ["Participación en circuito de desplazamientos. Descripción oral de patrones.","Aplicar patrones de movimiento propios del futsal: arranque, frenada y cambio de dirección.","① Calentamiento con cambios de dirección (12 min)\n② Explicación de patrones de desplazamiento (10 min)\n③ Circuito sin balón (30 min)\n④ Circuito con balón (35 min)\n⑤ Cierre y descripción oral (13 min)\n\n📦 Recursos: conos, balones, patio.","Lista de chequeo de patrones. Descripción oral (Saber Comunicar).","Cambios de dirección con una botella como referencia en casa.","Los patrones de desplazamiento son la base de todos los gestos técnicos."],
+  ["Conducción con interior, exterior y empeine. Lista de chequeo técnica.","Ejecutar la conducción del balón con el interior, exterior y empeine del pie.","① Calentamiento con balón (10 min)\n② Demostración: conducción con cada superficie (15 min)\n③ Práctica individual: slalom con conos (35 min)\n④ Conducción en parejas: relevos con obstáculos (25 min)\n⑤ Retroalimentación (15 min)\n\n📦 Recursos: conos, balones de microfútbol, patio.","Lista de chequeo: superficies del pie. Coevaluación en parejas.","Practicar conducción en casa con botella plástica.","Adaptar la velocidad del circuito a las capacidades individuales."],
+  ["Participación en ejercicios de pase y recepción. Lista de chequeo.","Ejecutar el pase corto y la recepción con la planta y el exterior del pie.","① Calentamiento en parejas (10 min)\n② Demostración: pase con interior y recepción con planta (15 min)\n③ Práctica estática en parejas (20 min)\n④ Práctica en movimiento en tríos (30 min)\n⑤ Juego 2v2 con énfasis en el pase (20 min)\n⑥ Cierre (5 min)\n\n📦 Recursos: balones, conos, patio.","Lista de chequeo: técnica de pase y recepción. Juego 2v2.","Practicar pases contra la pared en casa 10 minutos.","Corregir el uso del interior del pie; es el error más frecuente."],
+  ["Ejecución de remates hacia el arco. Registro de aciertos en tabla.","Ejecutar el remate básico con el interior del pie orientado hacia el arco.","① Calentamiento con conducciones (10 min)\n② Técnica del remate: posición y contacto (15 min)\n③ Práctica desde diferentes ángulos (25 min)\n④ Remate con conducción previa (30 min)\n⑤ Competencia amistosa de remate (15 min)\n⑥ Cierre (5 min)\n\n📦 Recursos: arcos o conos, balones, patio.","Registro de aciertos. Análisis de postura. Actitud (Saber Convivir).","Practicar remates contra la pared con objetivo marcado.","Valorar la mejora en dirección por encima de la potencia."],
+  ["Dominio del balón con diferentes superficies. Lista de chequeo.","Desarrollar el control y dominio del balón con diferentes superficies del pie.","① Calentamiento: toques libres (10 min)\n② Circuito: planta, interior, exterior, empeine, muslo (30 min)\n③ Reto: mayor número de toques sin tocar el suelo (20 min)\n④ Juego 3v3 con control obligatorio antes de pasar (30 min)\n⑤ Retroalimentación (10 min)\n\n📦 Recursos: balones, conos, patio.","Lista de chequeo de superficies. 3v3 (Saber Convivir).","Toques con la planta del pie en casa 5 minutos diarios.","El dominio mejora significativamente con práctica diaria."],
+  ["Participación en ejercicios de portería. Descripción del rol del portero.","Reconocer el rol del portero y ejecutar fundamentos básicos de atajada.","① Calentamiento específico (12 min)\n② Rol y fundamentos del portero (15 min)\n③ Posición base y desplazamientos laterales (20 min)\n④ Ejercicios de atajada desde corta distancia (35 min)\n⑤ Rotación por la portería (13 min)\n⑥ Reflexión (5 min)\n\n📦 Recursos: arcos, balones, guantes si hay.","Técnica del portero (Saber Resolver). Rotación equitativa.","Describir responsabilidades del portero y 3 fundamentos.","Garantizar la rotación de todos los estudiantes por la portería."],
+  ["Participación en situaciones 2v1 y 3v2. Conceptos tácticos identificados.","Identificar y aplicar marcación, desmarcación y apoyo al compañero.","① Calentamiento con persecución (10 min)\n② Marcación, desmarcación, apoyo (15 min)\n③ Situaciones 2v1 (25 min)\n④ Situaciones 3v2 (35 min)\n⑤ Análisis colectivo (15 min)\n\n📦 Recursos: conos, balones, patio.","Toma de decisiones en situaciones. Análisis colectivo.","Diagrama de una situación 2v1 y cómo resolverla.","Priorizar la comprensión táctica sobre la perfección técnica."],
+  ["Participación activa en juegos 4v4. Registro de decisiones.","Ejecutar situaciones de juego reducido 4v4 aplicando fundamentos técnicos y tácticos.","① Calentamiento con posesión (10 min)\n② Recordatorio de fundamentos (10 min)\n③ Juegos reducidos 4v4 con arcos pequeños (45 min)\n④ Rotación y análisis entre juegos (15 min)\n⑤ Reflexión: ¿apliqué los fundamentos? (20 min)\n\n📦 Recursos: conos como arcos, balones, patio.","Aplicación de fundamentos en juego real (Saber Resolver / Saber Convivir).","3 situaciones de juego con el fundamento que debió aplicar.","El juego reducido permite observar la comprensión real."],
+  ["Participación en partidos 4v4 con roles rotativos. Planilla diligenciada.","Participar en partidos 4v4 con roles de jugador, árbitro y planillero.","① Calentamiento grupal (10 min)\n② Asignación de roles: jugadores, árbitro, planillero (10 min)\n③ Partidos 4v4 con rotación (60 min)\n④ Retroalimentación entre grupos (15 min)\n⑤ Autoevaluación (5 min)\n\n📦 Recursos: conos, balones, planillas simples, silbato.","Técnica y táctica (Saber Resolver). Rol (Saber Convivir). Planilla.","Diligenciar planilla ficticia aplicando el reglamento.","La rotación de roles desarrolla comprensión integral."],
+  ["Participación en torneo de cierre. Desempeño en roles asignados.","Organizar y participar en torneo interno de futsal con fundamentos técnicos y reglamentarios.","① Calentamiento (10 min)\n② Sorteo y formato del torneo (10 min)\n③ Fase de grupos: partidos de 10 min (50 min)\n④ Semifinales y final (20 min)\n⑤ Premiación y reconocimiento al fair play (10 min)\n\n📦 Recursos: conos, balones, planillas, silbato.","Desempeño técnico, táctico y actitudinal (todos los saberes).","Sin juego: árbitro, planillero o cronometrista.","El torneo cierra el trimestre con experiencia integradora."],
+  ["Prueba práctica de habilidades. Prueba escrita sobre fundamentos.","Demostrar aprendizajes del trimestre mediante evaluación práctica y teórica.","① Calentamiento (10 min)\n② Evaluación práctica: conducción, pase, remate (40 min)\n③ Prueba escrita: reglamento y fundamentos (30 min)\n④ Auto y coevaluación (20 min)\n\n📦 Recursos: rúbrica, prueba escrita, balones, conos.","Rúbrica práctica (Saber Resolver). Prueba escrita (Saber Pensar).","Práctica de fundamentos con menor desempeño. Nueva evaluación.","Cierre del año para 6°; generar ambiente positivo."]
+];
+
+// ────────────────────────────────────────────────────────
+// NOVENO  (14 / 13 / 13 sesiones)
+// ────────────────────────────────────────────────────────
+const genNovT1 = () => {
+  const data = [
+    ["Exploración motriz inicial. Acuerdos de convivencia en cuaderno.","Explorar habilidades motrices previas y establecer acuerdos de convivencia para el área.","① Presentación del trimestre (10 min)\n② Juegos de exploración: carreras, lanzamientos, desplazamientos (30 min)\n③ Construcción de acuerdos de convivencia (20 min)\n④ Registro en cuaderno (25 min)\n⑤ Cierre (15 min)\n\n📦 Recursos: balones, conos, cuaderno.","Observación de habilidades iniciales. Participación en acuerdos.","Investigar qué es el balonmano: 5 datos básicos.","El diagnóstico inicial orienta la secuencia del trimestre."],
+    ["Nota en cuaderno: historia, reglamento y posiciones del balonmano.","Identificar el origen, las reglas básicas y las posiciones del balonmano.","① Calentamiento (10 min)\n② Exposición: historia y reglamento básico (25 min)\n③ Video: jugadas y posiciones (15 min)\n④ Identificación de posiciones en diagrama (20 min)\n⑤ Registro en cuaderno (20 min)\n⑥ Cierre (10 min)\n\n📦 Recursos: cuaderno, tablero.","Revisión de cuaderno. Identificación de posiciones.","Dibujar el campo con medidas y posiciones.","Relacionar el reglamento con deportes que ya conocen."],
+    ["Ejecución de agarre y recepción. Lista de chequeo del docente.","Ejecutar el agarre correcto del balón y distintas formas de recepción.","① Calentamiento con balón (10 min)\n② Demostración: agarre y recepción alta y baja (20 min)\n③ Práctica en parejas estáticos (20 min)\n④ Recepción en movimiento (30 min)\n⑤ Juego de posesión (15 min)\n⑥ Cierre (5 min)\n\n📦 Recursos: balones de balonmano, patio.","Lista de chequeo: agarre y recepción. Posesión (Saber Convivir).","Recepciones con pelota contra la pared y registrar dificultades.","Si no hay balones específicos, usar balones de caucho similares."],
+    ["Ejecución de 3 tipos de pase. Registro de observación.","Ejecutar pase de hombro, de muñeca y en movimiento con técnica básica.","① Calentamiento (10 min)\n② Demostración técnica de los 3 tipos (20 min)\n③ Práctica en parejas por separado (30 min)\n④ Circuito en tríos combinando los 3 (25 min)\n⑤ Aplicación en juego reducido (10 min)\n⑥ Cierre (5 min)\n\n📦 Recursos: balones, conos, patio.","Lista de chequeo de los 3 tipos. Aplicación en juego.","Pase de hombro contra la pared y registrar correcciones.","El pase de hombro es el más frecuente; priorizar su técnica."],
+    ["Participación en circuito de desplazamientos. Lista de chequeo.","Aplicar los desplazamientos técnicos del balonmano con y sin balón.","① Calentamiento de desplazamientos (10 min)\n② Pasos permitidos y desplazamientos (15 min)\n③ Circuito sin balón (25 min)\n④ Circuito con balón: desplazamiento + bote + pase (35 min)\n⑤ Retroalimentación (15 min)\n\n📦 Recursos: conos, balones, patio.","Lista de chequeo de desplazamientos. Participación.","Desplazamientos laterales de 3 pasos en casa.","Insistir en la regla de los 3 pasos."],
+    ["Ejecución de lanzamiento en apoyo. Registro de dirección y potencia.","Ejecutar el lanzamiento en apoyo con postura correcta hacia el arco.","① Calentamiento de hombro y muñeca (10 min)\n② Demostración: lanzamiento en apoyo (20 min)\n③ Práctica hacia objetivo en la pared (25 min)\n④ Práctica con carrera previa hacia el arco (30 min)\n⑤ Registro de aciertos (10 min)\n⑥ Cierre (5 min)\n\n📦 Recursos: arcos o paredes marcadas, balones.","Lista de chequeo: postura y dirección. Registro de aciertos.","Practicar desde 4 metros con registro de dirección.","Técnica antes de potencia."],
+    ["Ejecución de lanzamiento en salto y desde el extremo.","Ejecutar el lanzamiento en salto y desde posición de extremo con técnica básica.","① Calentamiento (repaso lanzamiento en apoyo) (15 min)\n② Demostración: salto y extremo (15 min)\n③ Práctica progresiva: salto corto → completo (40 min)\n④ Práctica desde el extremo (20 min)\n⑤ Retroalimentación (10 min)\n\n📦 Recursos: arcos, balones, conos.","Técnica de salto y dirección (Saber Resolver). Progresión.","Salto vertical en casa describiendo cambios en el impulso.","El lanzamiento en salto requiere coordinación; progresar."],
+    ["Rotación en rol de portero. Descripción en cuaderno.","Reconocer el rol del portero y ejecutar fundamentos básicos de atajada.","① Calentamiento: movilidad lateral, reacciones (12 min)\n② Rol del portero: posición y atajada (18 min)\n③ Posición base y desplazamientos (20 min)\n④ Atajadas desde distintos ángulos (30 min)\n⑤ Rotación por el arco (15 min)\n⑥ Reflexión (5 min)\n\n📦 Recursos: arcos, balones, guantes si hay.","Técnica del portero (Saber Resolver). Rotación equitativa.","5 responsabilidades del portero con diagrama.","Motivar a todos a probar el rol sin distinción."],
+    ["Participación en situaciones de ataque. Análisis táctico oral.","Aplicar principios ofensivos: pase y va, creación de espacio y apoyo.","① Calentamiento con posesión (10 min)\n② Pase y va, espacio, apoyo al portador (15 min)\n③ Situaciones 2v1 (25 min)\n④ Situaciones 3v2 (30 min)\n⑤ Análisis colectivo (20 min)\n\n📦 Recursos: balones, conos, arcos.","Aplicación táctica (Saber Resolver / Saber Pensar).","Diagrama del pase y va con descripción en cuaderno.","Comprensión del concepto sobre perfección técnica."],
+    ["Participación en defensas. Identificación de sistemas básicos.","Aplicar principios defensivos: marcación al hombre y zona 6:0.","① Calentamiento con persecución (10 min)\n② Marcación individual vs. zona 6:0 (20 min)\n③ Práctica de marcación 2v2 (25 min)\n④ Defensa en zona (30 min)\n⑤ Juego 4v4 (10 min)\n⑥ Análisis (5 min)\n\n📦 Recursos: balones, conos, arcos.","Aplicación de sistemas (Saber Resolver / Saber Pensar).","Diferencias entre marcación y zona en cuaderno.","Situaciones simples antes de complejidad."],
+    ["Participación en partidos 3v3 y 4v4. Análisis oral.","Ejecutar juego 3v3 y 4v4 aplicando fundamentos técnicos y tácticos.","① Calentamiento con posesión (10 min)\n② Partidos 3v3: énfasis técnico (30 min)\n③ Partidos 4v4: énfasis táctico (35 min)\n④ Análisis entre partidos (15 min)\n⑤ Reflexión (10 min)\n\n📦 Recursos: balones, arcos, conos.","Aplicación técnica y táctica. Análisis oral.","3 situaciones y el fundamento que debió aplicar.","El juego reducido da mayor participación."],
+    ["Diseño y presentación de actividad con fundamentos del balonmano.","Diseñar actividades que involucren los fundamentos técnicos básicos.","① Calentamiento dirigido por voluntario (10 min)\n② Tarea: diseñar juego con fundamentos (10 min)\n③ Diseño en grupos (25 min)\n④ Presentación y ejecución (40 min)\n⑤ Coevaluación (15 min)\n\n📦 Recursos: balones, conos, cuaderno.","Pertinencia pedagógica (Saber Pensar / Saber Comunicar).","Diseñar individualmente una actividad simple.","Desarrolla autonomía y pensamiento pedagógico."],
+    ["Participación en partido reglamentario con árbitro y planilla.","Participar en partido asumiendo roles de jugador, árbitro y planillero.","① Calentamiento (10 min)\n② Asignación de roles (10 min)\n③ Partido reglamentario (45 min)\n④ Análisis: decisiones y jugadas clave (15 min)\n⑤ Cierre (20 min)\n\n📦 Recursos: arcos, balones, planilla, silbato.","Desempeño en rol (Saber Resolver / Saber Convivir).","Planilla ficticia aplicando el reglamento.","El partido integra todos los aprendizajes."],
+    ["Prueba práctica. Prueba escrita. Plan de trabajo T1.","Demostrar aprendizajes mediante prueba práctica, teórica y plan.","① Calentamiento (10 min)\n② Evaluación práctica: circuito técnico (40 min)\n③ Prueba teórica (25 min)\n④ Presentación del plan de trabajo T1 (15 min)\n⑤ Coevaluación (10 min)\n\n📦 Recursos: rúbrica, prueba escrita.","Rúbrica práctica. Prueba escrita. Plan de trabajo.","Práctica en habilidades con menor desempeño.","El plan incluye análisis del proceso y compromisos."]
+  ];
+  return data;
+};
+
+const genNovT2 = () => Array.from({length:13},(_,i)=>[
+  `Evidencia Semana ${i+1} — Voleibol`,
+  `Desarrollar fundamentos técnicos del voleibol — Sesión ${i+1}`,
+  `① Calentamiento específico (10 min)\n② Explicación y demostración técnica (20 min)\n③ Práctica guiada y en situación (50 min)\n④ Análisis y retroalimentación (15 min)\n⑤ Cierre (5 min)\n\n📦 Recursos: balones de voleibol, red o cuerda, patio.`,
+  `Observación de técnica aplicada. Participación activa (todos los saberes).`,
+  `Práctica autónoma del fundamento trabajado en casa.`,
+  `Adaptar ejercicios a las capacidades individuales de cada estudiante.`
+]);
+
+const genNovT3 = () => Array.from({length:13},(_,i)=>[
+  `Evidencia Semana ${i+1} — Baloncesto`,
+  `Desarrollar fundamentos técnicos del baloncesto — Sesión ${i+1}`,
+  `① Calentamiento específico (10 min)\n② Explicación y demostración técnica (20 min)\n③ Práctica en circuito y situación de juego (50 min)\n④ Reflexión y retroalimentación (15 min)\n⑤ Cierre (5 min)\n\n📦 Recursos: balones de baloncesto, aro o aro adaptado, patio.`,
+  `Lista de chequeo técnico. Desempeño en juego (todos los saberes).`,
+  `Práctica del fundamento trabajado en casa 10 minutos.`,
+  `Adaptar distancias y ejercicios a las capacidades individuales.`
+]);
+
+// ────────────────────────────────────────────────────────
+// DÉCIMO
+// ────────────────────────────────────────────────────────
+const genDecT1 = () => {
+  const data = [
+    ["Presentación del proyecto anual. Nota en cuaderno.","Presentar el enfoque del área en décimo y el proyecto integrador de administración deportiva.","① Enfoque EF en 10° (20 min)\n② Presentación del proyecto integrador (15 min)\n③ Expectativas y compromisos (15 min)\n④ Acuerdos de evaluación (20 min)\n⑤ Registro en cuaderno (20 min)\n⑥ Cierre (10 min)\n\n📦 Recursos: cuaderno, tablero.","Participación y compromisos. Registro.","Investigar qué es la administración deportiva: 5 conceptos clave.","Conectar con experiencias de liderazgo previas."],
+    ["Mapa conceptual: deporte, recreación, administración y evento.","Identificar y relacionar conceptos básicos de la administración deportiva.","① Lluvia de ideas (10 min)\n② Exposición con ejemplos (25 min)\n③ Mapa conceptual en grupos (20 min)\n④ Socialización (20 min)\n⑤ Registro individual (15 min)\n⑥ Cierre (10 min)\n\n📦 Recursos: cuaderno, tablero, marcadores.","Mapa: precisión y relaciones. Socialización.","Elaborar el mapa con los conceptos revisados.","Relacionar con eventos deportivos conocidos."],
+    ["Cuadro clasificatorio de tipos de eventos.","Clasificar tipos de eventos: torneos, festivales, encuentros y olimpiadas.","① ¿En qué eventos han participado? (10 min)\n② Clasificación por naturaleza y objetivos (25 min)\n③ Ejemplos institucionales (20 min)\n④ Cuadro comparativo (25 min)\n⑤ Socialización (20 min)\n\n📦 Recursos: cuaderno, tablero.","Cuadro: precisión en la clasificación.","Describir un evento conocido identificando su tipo.","Incluir el Intercursos como ejemplo concreto."],
+    ["Ficha de planificación completada: diagnóstico, objetivos y recursos.","Identificar las fases de planificación de un evento.","① ¿Qué se necesita para un torneo? (10 min)\n② Fases de planificación con ejemplos (25 min)\n③ Caso: planificación del Intercursos (20 min)\n④ Completar ficha (30 min)\n⑤ Socialización (15 min)\n\n📦 Recursos: cuaderno, ficha de planificación.","Ficha: completitud y coherencia.","Completar campos pendientes en casa.","La ficha es la base del proyecto integrador."],
+    ["Cuadro de fases de ejecución y evaluación de un evento.","Identificar las fases de ejecución y evaluación de un evento deportivo.","① ¿Qué pasa el día del evento? (10 min)\n② Fases de ejecución y evaluación (25 min)\n③ Análisis de eventos conocidos (20 min)\n④ Cuadro de fases (25 min)\n⑤ Discusión y cierre (20 min)\n\n📦 Recursos: cuaderno, tablero.","Cuadro con ejemplos. Análisis.","Investigar un evento y describir su ejecución.","Conectar con la mejora continua."],
+    ["Participación en simulación con roles. Registro de responsabilidades.","Diferenciar roles: coordinador, árbitro, planillero y logística.","① ¿Qué hace cada persona en un evento? (10 min)\n② Presentación de roles (20 min)\n③ Simulación de mini evento (45 min)\n④ ¿Qué rol fue más desafiante? (15 min)\n⑤ Registro (10 min)\n\n📦 Recursos: cuaderno, planillas, silbato.","Desempeño en el rol. Análisis reflexivo.","Responsabilidades de un rol y propuesta de mejoras.","Rotación garantiza comprensión de cada cargo."],
+    ["Fixture todos contra todos para 6 equipos elaborado.","Elaborar fixture todos contra todos y diferenciarlo de otros sistemas.","① ¿Cómo se organiza el Mundial? (10 min)\n② Sistemas de competencia con ejemplos (25 min)\n③ Ventajas y desventajas (15 min)\n④ Fixture todos contra todos para 6 equipos (30 min)\n⑤ Socialización (20 min)\n\n📦 Recursos: cuaderno, formato de fixture.","Fixture elaborado correctamente. Argumentación.","Fixture de eliminación directa para 8 equipos.","El sistema todos contra todos es el más equitativo."],
+    ["Fixture completo de torneo simulado. Presentación al grupo.","Elaborar fixture completo con sistema todos contra todos.","① Repaso de sistemas (10 min)\n② Torneo simulado: equipos y formato (15 min)\n③ Fixture con horarios y canchas (40 min)\n④ Presentación al grupo (25 min)\n⑤ Ajustes (10 min)\n\n📦 Recursos: cuaderno, formato, tablero.","Fixture: organización y coherencia. Presentación.","Completar en casa con correcciones señaladas.","El fixture incluye fechas, horarios y puntuación."],
+    ["Participación en simulación de arbitraje. Señales aplicadas.","Aplicar señales arbitrales en simulaciones con roles rotativos.","① Calentamiento libre (10 min)\n② Repaso de señales (20 min)\n③ Simulación con árbitro rotativo (45 min)\n④ ¿Qué generó conflicto? (15 min)\n⑤ Registro (10 min)\n\n📦 Recursos: silbato, tarjetas, balones, patio.","Señales y decisiones arbitrales. Debate.","Dibujar 5 señales y describir su aplicación.","El arbitraje desarrolla pensamiento crítico."],
+    ["Propuesta escrita del mini-evento: objetivos, roles y cronograma.","Diseñar propuesta de mini-evento con objetivos, roles y cronograma.","① Requisitos del proyecto (15 min)\n② Conformación de grupos (10 min)\n③ Diseño: objetivos, formato, roles, cronograma (55 min)\n④ Revisión del docente (15 min)\n⑤ Ajustes (5 min)\n\n📦 Recursos: cuaderno, formato.","Propuesta: completitud y viabilidad.","Completar campos pendientes en casa.","El mini-evento debe ser realizable con recursos institucionales."],
+    ["Presentación oral del mini-evento. Ajustes incorporados.","Presentar el diseño del mini-evento incorporando retroalimentación.","① Calentamiento (10 min)\n② Presentaciones: máximo 10 min por grupo (50 min)\n③ Retroalimentación (25 min)\n④ Registro de ajustes (15 min)\n\n📦 Recursos: propuesta escrita, cuaderno.","Calidad de la presentación. Ajustes.","Completar el documento con ajustes señalados.","Las presentaciones desarrollan comunicación pública."],
+    ["Registro de participación en el mini-evento.","Ejecutar el mini-evento asumiendo roles organizativos con responsabilidad.","① Preparación logística (15 min)\n② Ejecución: apertura, juegos, cierre (70 min)\n③ Registro de incidencias\n④ ¿Qué salió bien? (15 min)\n\n📦 Recursos: materiales deportivos, planillas.","Desempeño en el rol (Saber Resolver / Saber Convivir).","Informe del desempeño en el rol asumido.","El mini-evento es el momento de mayor aprendizaje."],
+    ["Análisis escrito del mini-evento: aciertos, debilidades y mejoras.","Evaluar el mini-evento identificando aciertos y propuestas de mejora.","① Análisis: ¿qué funcionó? (20 min)\n② Informe en grupos (30 min)\n③ Presentaciones (25 min)\n④ Síntesis y lecciones (15 min)\n⑤ Registro (10 min)\n\n📦 Recursos: cuaderno, informe.","Calidad del análisis. Mejoras propuestas.","Completar el informe con aspectos señalados.","La evaluación es tan importante como la ejecución."],
+    ["Prueba teórica. Portafolio del evento. Autoevaluación.","Demostrar aprendizajes mediante prueba, portafolio y autoevaluación.","① Prueba teórica (30 min)\n② Presentación del portafolio (30 min)\n③ Autoevaluación por los 4 saberes (15 min)\n④ Coevaluación (15 min)\n⑤ Retroalimentación (10 min)\n\n📦 Recursos: prueba, portafolio, rúbrica.","Prueba, portafolio y evaluaciones.","Complementar el portafolio con aspectos señalados.","El portafolio evidencia el proceso completo."]
+  ];
+  return data;
+};
+
+const genDecT2 = () => Array.from({length:13},(_,i)=>[
+  `Evidencia Semana ${i+1} — Fútbol de Salón`,
+  `Organizar y participar en torneo de fútbol de salón — Sesión ${i+1}`,
+  `① Calentamiento (10 min)\n② Actividad específica del torneo o técnica (50 min)\n③ Planillaje y análisis (25 min)\n④ Reflexión y compromisos (15 min)\n\n📦 Recursos: balones de microfútbol, conos, planillas, silbato.`,
+  `Desempeño técnico, táctico y en roles organizativos.`,
+  `Completar planilla ficticia o practicar señales en casa.`,
+  `El torneo es el contexto integrador del trimestre.`
+]);
+
+const genDecT3 = () => Array.from({length:13},(_,i)=>[
+  `Evidencia Semana ${i+1} — Voleibol Torneos`,
+  `Aplicar arbitraje y administración deportiva en mini torneo de voleibol — Sesión ${i+1}`,
+  `① Calentamiento (10 min)\n② Actividad del mini torneo con roles rotativos (50 min)\n③ Estadísticas y seguimiento (25 min)\n④ Análisis y cierre (15 min)\n\n📦 Recursos: balones, red, planillas, silbato.`,
+  `Los tres roles asumidos: jugador, árbitro, planillero.`,
+  `Revisar planillas y corregir errores de registro.`,
+  `Asegurar que todos asuman los 3 roles durante el torneo.`
+]);
+
+// ────────────────────────────────────────────────────────
+// UNDÉCIMO
+// ────────────────────────────────────────────────────────
+const genUndT1 = () => {
+  const data = [
+    ["Presentación del proyecto integrador. Acuerdos en cuaderno.","Presentar el proyecto integrador: planeación, ejecución y evaluación de eventos institucionales.","① Enfoque del área en 11° (15 min)\n② Proyecto integrador: alcances y entregables (20 min)\n③ Compromisos y equipos (15 min)\n④ Acuerdos de convivencia (15 min)\n⑤ Registro (25 min)\n⑥ Cierre (10 min)\n\n📦 Recursos: cuaderno, tablero.","Participación y compromisos. Registro.","Ejemplos de proyectos deportivos escolares exitosos.","El proyecto prepara para el liderazgo comunitario."],
+    ["Mapa conceptual: organización deportiva en contexto institucional.","Identificar elementos de la organización deportiva en el contexto institucional.","① ¿Qué se necesita para un gran evento? (10 min)\n② Elementos de la organización (25 min)\n③ Análisis del Intercursos real (20 min)\n④ Mapa conceptual (25 min)\n⑤ Socialización (20 min)\n\n📦 Recursos: cuaderno, tablero.","Mapa: precisión y relaciones. Socialización.","Elaborar el mapa individualmente con los elementos revisados.","El Intercursos como referente facilita la comprensión."],
+    ["Cuadro de tipos de proyectos recreo-deportivos.","Clasificar tipos de proyectos: torneos, festivales, días deportivos y lúdicas.","① Eventos que han liderado (10 min)\n② Clasificación por tipo y alcance (25 min)\n③ ¿Cuál es más pertinente para nuestra institución? (20 min)\n④ Cuadro clasificatorio (25 min)\n⑤ Cierre (20 min)\n\n📦 Recursos: cuaderno, tablero.","Cuadro completo. Argumentación.","2 tipos de proyectos con características y participantes.","Conectar con el proyecto que cada grupo desarrollará."],
+    ["Diagnóstico institucional elaborado: necesidades identificadas.","Analizar necesidades deportivas y recreativas de la institución.","① Metodología de diagnóstico (15 min)\n② Observación, encuesta y entrevista (20 min)\n③ Aplicación de instrumentos (40 min)\n④ Análisis preliminar (15 min)\n⑤ Registro (10 min)\n\n📦 Recursos: cuaderno, instrumentos.","Diagnóstico con datos reales.","Completar el análisis con datos recogidos en casa.","El diagnóstico real da pertinencia al proyecto."],
+    ["Documento de diseño: objetivo, alcance y recursos.","Formular objetivo, alcance y recursos del proyecto.","① Formato de diseño (10 min)\n② Objetivos SMART (20 min)\n③ Alcance: ¿qué incluye? (20 min)\n④ Recursos disponibles (25 min)\n⑤ Registro (25 min)\n\n📦 Recursos: cuaderno, formato.","Documento: coherencia entre objetivo y recursos.","Completar campos pendientes en casa.","Los objetivos SMART aseguran la viabilidad."],
+    ["Cronograma del proyecto. Matriz de roles del equipo.","Elaborar el cronograma y definir roles del equipo organizador.","① Gantt simplificado (15 min)\n② Elaboración del cronograma (35 min)\n③ Roles: coordinador, logística, comunicaciones, arbitraje (25 min)\n④ Socialización (15 min)\n⑤ Ajustes (10 min)\n\n📦 Recursos: cuaderno, formato.","Cronograma y roles. Socialización.","Tareas específicas de cada rol.","El cronograma es el instrumento de gestión clave."],
+    ["Análisis con justificación del sistema de competencia elegido.","Seleccionar y justificar el sistema de competencia para el proyecto.","① Repaso de sistemas (15 min)\n② Análisis de pertinencia (25 min)\n③ Selección justificada (20 min)\n④ Fixture del sistema elegido (25 min)\n⑤ Socialización (15 min)\n\n📦 Recursos: cuaderno, formatos.","Análisis y justificación. Fixture.","Comparativo de 2 sistemas alternativos.","La justificación técnica es clave del administrador."],
+    ["Plan logístico: inscripciones, materiales, espacios y contingencia.","Planificar aspectos logísticos y elaborar plan de contingencia.","① Componentes logísticos (15 min)\n② Trabajo por componente (40 min)\n③ Integración del plan (20 min)\n④ Plan de contingencia (15 min)\n⑤ Registro (10 min)\n\n📦 Recursos: cuaderno, formatos logísticos.","Plan logístico completo. Contingencia.","Componentes logísticos con mayor detalle en casa.","El plan de contingencia indica madurez organizacional."],
+    ["Reglamento, fichas de inscripción y protocolo de apertura.","Elaborar reglamento, fichas de inscripción y protocolo.","① Análisis de reglamentos reales (15 min)\n② Elaboración del reglamento (30 min)\n③ Fichas de inscripción (20 min)\n④ Protocolo de apertura (25 min)\n⑤ Revisión (10 min)\n\n📦 Recursos: cuaderno, referentes.","Reglamento, fichas y protocolo.","Artículos pendientes del reglamento en casa.","El reglamento y protocolo dan formalidad al evento."],
+    ["Primera fase del evento: apertura y primera jornada.","Liderar la primera fase del evento supervisando roles y cronograma.","① Revisión de roles (15 min)\n② Apertura y primera jornada (60 min)\n③ Registro de incidencias (10 min)\n④ Análisis post-jornada (15 min)\n\n📦 Recursos: materiales del evento, planillas.","Liderazgo en ejecución (Saber Convivir / Saber Resolver).","Informe del desempeño en el rol asumido.","El liderazgo en ejecución es el mayor aprendizaje."],
+    ["Segunda fase: resolución de imprevistos y ajustes.","Liderar la segunda fase resolviendo imprevistos en tiempo real.","① Revisión de incidencias (15 min)\n② Segunda fase del evento (55 min)\n③ Resolución de imprevistos\n④ Ajustes al cronograma\n⑤ Compromisos (30 min)\n\n📦 Recursos: materiales del evento, registros.","Gestión de imprevistos (Saber Resolver). Liderazgo.","3 imprevistos y cómo se resolvieron.","Resolver imprevistos en tiempo real: competencia clave."],
+    ["Informe de evaluación del evento presentado.","Evaluar el evento: aciertos, errores, impacto y recomendaciones.","① Análisis colectivo (20 min)\n② Informe en grupos (30 min)\n③ Presentaciones (30 min)\n④ Retroalimentación (20 min)\n\n📦 Recursos: cuaderno, registros.","Análisis evaluativo. Recomendaciones.","Completar informe con aspectos señalados.","La evaluación cierra el ciclo de aprendizaje."],
+    ["Presentación oral del proceso completo del proyecto.","Exponer el proceso completo ante el grupo.","① Presentaciones: diseño, ejecución, evaluación (60 min)\n② Retroalimentación entre grupos (25 min)\n③ Síntesis: aprendizajes clave (15 min)\n\n📦 Recursos: presentación, cuaderno.","Presentación. Retroalimentación.","Complementar con aspectos señalados.","La presentación desarrolla confianza comunicativa."],
+    ["Prueba teórica. Portafolio. Autoevaluación.","Demostrar aprendizajes mediante prueba, portafolio y autoevaluación.","① Prueba teórica (30 min)\n② Portafolio final (30 min)\n③ Autoevaluación por 4 saberes (15 min)\n④ Coevaluación (15 min)\n⑤ Cierre (10 min)\n\n📦 Recursos: prueba, portafolio, rúbrica.","Prueba, portafolio y evaluaciones.","Completar portafolio con aspectos señalados.","El portafolio evidencia el proceso completo."]
+  ];
+  return data;
+};
+
+const genUndT2 = () => Array.from({length:13},(_,i)=>[
+  `Evidencia Semana ${i+1} — Juego y Lúdica`,
+  `Diseñar y dirigir actividades lúdico-recreativas — Sesión ${i+1}`,
+  `① Calentamiento lúdico (10 min)\n② Concepto teórico o diseño (25 min)\n③ Ejecución de actividades (45 min)\n④ Reflexión y retroalimentación (20 min)\n\n📦 Recursos: materiales según actividades diseñadas.`,
+  `Calidad de la facilitación y pertinencia pedagógica.`,
+  `Ajustar el plan con correcciones identificadas.`,
+  `La reflexión sobre la propia práctica es el aprendizaje central.`
+]);
+
+const genUndT3 = () => Array.from({length:13},(_,i)=>[
+  `Evidencia Semana ${i+1} — Cualidades Físicas`,
+  `Aplicar principios del entrenamiento en plan de condición física — Sesión ${i+1}`,
+  `① Calentamiento específico (10 min)\n② Trabajo de cualidad física asignada (50 min)\n③ Registro y análisis de resultados (25 min)\n④ Ajustes al plan personal (15 min)\n\n📦 Recursos: conos, cronómetro, cuaderno, colchoneta si hay.`,
+  `Ejecución técnica, registro sistemático y análisis (todos los saberes).`,
+  `Completar sesiones faltantes en casa.`,
+  `El registro sistemático es un hábito que trasciende el deporte.`
+]);
+
+// ═══════════════════════════════════════════════
+// EXPORT OBJETO CENTRAL
+// ═══════════════════════════════════════════════
+const SESSIONS = {
+  sexto:    { T1: SEX_T1,       T2: SEX_T2,       T3: SEX_T3       },
+  noveno:   { T1: genNovT1(),   T2: genNovT2(),   T3: genNovT3()   },
+  decimo:   { T1: genDecT1(),   T2: genDecT2(),   T3: genDecT3()   },
+  undecimo: { T1: genUndT1(),   T2: genUndT2(),   T3: genUndT3()   }
+};
+
+// ═══════════════════════════════════════════════
+// UTILIDADES DE FECHA
+// ═══════════════════════════════════════════════
+function getAcademicContext() {
+  const today = new Date();
+  today.setHours(12,0,0,0);
+
+  for (const [tKey, tData] of Object.entries(CALENDAR)) {
+    if (today < tData.start || today > tData.end) continue;
+    if (today >= tData.vacStart && today <= tData.vacEnd) {
+      return { status:'vacation', trimKey:tKey, trimData:tData };
+    }
+    for (let i = 0; i < tData.weeks.length; i++) {
+      const w = tData.weeks[i];
+      if (today >= w.ms && today <= w.me) {
+        return { status:'class', trimKey:tKey, trimData:tData, weekIdx:i };
+      }
+    }
+    return { status:'between_weeks', trimKey:tKey, trimData:tData, weekIdx:0 };
+  }
+  const yr = today.getFullYear();
+  if (yr < 2026 || (yr === 2026 && today < CALENDAR.T1.start))
+    return { status:'before_year', trimKey:'T1', trimData:CALENDAR.T1, weekIdx:0 };
+  return { status:'after_year', trimKey:'T3', trimData:CALENDAR.T3, weekIdx:12 };
+}
+
+function fmtDate(d) {
+  const dn = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const mn = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${dn[d.getDay()]} ${d.getDate()} de ${mn[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+
+/* ═══════ STATE ═══════ */
+const state = {
+  grade: null,
+  trim: 'T1',
+  weekIdx: 0,
+  openSections: {},
+  notes: {},
+  currentView: 'home',
+  todayCtx: null
+};
+
+/* ═══════ INIT ═══════ */
+window.addEventListener('DOMContentLoaded', () => {
+  const ctx = getAcademicContext();
+  state.todayCtx = ctx;
+  state.trim = ctx.trimKey;
+  state.weekIdx = ctx.weekIdx || 0;
+
+  // Header date
+  const today = new Date();
+  document.getElementById('hdate-display').textContent = fmtDate(today);
+  document.getElementById('sc-date-text').textContent = fmtDate(today);
+
+  // Status context
+  const ctxEl = document.getElementById('sc-ctx-text');
+  const statusMap = {
+    class: `📚 ${ctx.trimData.label} · Semana ${(ctx.weekIdx||0)+1}`,
+    vacation: '🏖️ Período de vacaciones',
+    before_year: '⏳ Antes del inicio del año',
+    after_year: '🏁 Año escolar finalizado',
+    between_weeks: '📆 Entre semanas'
+  };
+  ctxEl.textContent = statusMap[ctx.status] || '📆 Fuera de período';
+  ctxEl.className = 'sc-ctx ' + (ctx.status === 'class' ? 'cls' : ctx.status === 'vacation' ? 'vac' : 'oth');
+
+  // Grade grid
+  const gg = document.getElementById('grade-grid');
+  GRADES.forEach(g => {
+    const tema = CALENDAR[ctx.trimKey]?.tema?.[g.id] || '';
+    const btn = document.createElement('button');
+    btn.className = 'grade-btn';
+    btn.style.borderColor = g.color + '55';
+    btn.style.background = g.bg;
+    btn.innerHTML = `
+      <span class="gb-emoji">${g.emoji}</span>
+      <span class="gb-label">${g.label}</span>
+      <span class="gb-sub">${g.sub}</span>
+      <span class="gb-tema" style="background:${g.color}22;color:${g.color}">${tema}</span>
+    `;
+    btn.onclick = () => selectGrade(g);
+    gg.appendChild(btn);
+  });
+
+  // Trim badges
+  const tb = document.getElementById('trim-badges');
+  Object.entries(CALENDAR).forEach(([k,t]) => {
+    const b = document.createElement('div');
+    b.className = 'trim-badge';
+    b.style.background = t.color + '22';
+    b.style.border = `1px solid ${t.color}55`;
+    b.style.color = t.color;
+    b.textContent = t.label;
+    tb.appendChild(b);
+  });
+
+  // Load saved notes
+  try {
+    const saved = localStorage.getItem('pwa_ef_notes');
+    if (saved) state.notes = JSON.parse(saved);
+  } catch(e){}
+});
+
+/* ═══════ GRADE SELECT ═══════ */
+function selectGrade(grade) {
+  state.grade = grade;
+  renderSession();
+  showView('session');
+}
+
+/* ═══════ VIEW MANAGEMENT ═══════ */
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('v-' + name).classList.add('active');
+  state.currentView = name;
+
+  // Nav
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-' + (name === 'calendar' ? 'calendar' : name === 'session' ? 'session' : 'home')).classList.add('active');
+
+  // Show/hide session nav buttons
+  const inSession = name === 'session' || name === 'calendar';
+  document.getElementById('nav-session').style.display = inSession ? '' : 'none';
+  document.getElementById('nav-calendar').style.display = inSession ? '' : 'none';
+  document.getElementById('btn-calendar-toggle').style.display = inSession ? '' : 'none';
+  document.getElementById('btn-back-home').style.display = inSession ? '' : 'none';
+}
+
+function goHome() { showView('home'); }
+function goSession() { renderSession(); showView('session'); }
+function goCalendar() { renderCalendar(); showView('calendar'); }
+
+document.getElementById('btn-calendar-toggle').onclick = () => {
+  if (state.currentView === 'calendar') goSession();
+  else goCalendar();
+};
+
+/* ═══════ RENDER SESSION ═══════ */
+function renderSession() {
+  const g = state.grade;
+  if (!g) return;
+
+  const tData = CALENDAR[state.trim];
+  const tc = tData.color;
+  const totalW = tData.weeks.length;
+  const wi = state.weekIdx;
+  const week = tData.weeks[wi];
+  const session = SESSIONS[g.id]?.[state.trim]?.[wi];
+  const comp = COMP[g.id]?.[state.trim];
+  const tema = tData.tema?.[g.id] || '';
+
+  // Update header date color
+  document.getElementById('hdate-display').style.color = tc;
+
+  // Trim tabs
+  const tabsEl = document.getElementById('trim-tabs');
+  tabsEl.innerHTML = '';
+  Object.entries(CALENDAR).forEach(([k,t]) => {
+    const tab = document.createElement('button');
+    tab.className = 'ttab';
+    tab.textContent = t.label.replace(' Trimestre','°');
+    tab.style.color = 'white';
+    if (k === state.trim) {
+      tab.style.background = t.color;
+      tab.style.borderColor = t.color;
+    } else {
+      tab.style.background = 'rgba(255,255,255,0.07)';
+      tab.style.borderColor = 'rgba(255,255,255,0.12)';
+    }
+    tab.onclick = () => { state.trim = k; state.weekIdx = 0; renderSession(); };
+    tabsEl.appendChild(tab);
+  });
+
+  // Week nav
+  const navEl = document.getElementById('week-nav');
+  navEl.innerHTML = `
+    <button class="wnav-btn" ${wi===0?'disabled':''} onclick="changeWeek(-1)">←</button>
+    <div class="wnav-info" style="background:${tc}18;border:1px solid ${tc}44">
+      <div class="wn-num" style="color:${tc}">${g.emoji} ${g.label} · Semana ${wi+1} / ${totalW}</div>
+      <div class="wn-rng">${week?.rng || ''} · ${tema}</div>
+    </div>
+    <button class="wnav-btn" ${wi>=totalW-1?'disabled':''} onclick="changeWeek(1)">→</button>
+  `;
+
+  // Session content
+  const scroll = document.getElementById('session-scroll');
+  scroll.innerHTML = '';
+
+  if (!session) {
+    scroll.innerHTML = `<div style="text-align:center;padding:40px;color:#475569"><div style="font-size:36px;margin-bottom:10px">🗓️</div><div style="font-size:13px">Sin sesión para esta semana.</div></div>`;
+    return;
+  }
+
+  const sections = [
+    { key:'obj',  label:'Objetivo',               icon:'🎯', idx:1, defOpen:true  },
+    { key:'evi',  label:'Evidencia de Aprendizaje',icon:'📌', idx:0, defOpen:true  },
+    { key:'act',  label:'Actividades y Recursos',  icon:'🏃', idx:2, defOpen:true  },
+    { key:'eval', label:'Estrategias de Evaluación',icon:'✅', idx:3, defOpen:false },
+    { key:'niv',  label:'Estrategia de Nivelación',icon:'🔁', idx:4, defOpen:false },
+    { key:'obs',  label:'Observaciones',           icon:'📝', idx:5, defOpen:false },
+  ];
+
+  sections.forEach(sec => {
+    const openKey = g.id + state.trim + wi + sec.key;
+    if (!(openKey in state.openSections)) state.openSections[openKey] = sec.defOpen;
+    const isOpen = state.openSections[openKey];
+    const acc = document.createElement('div');
+    acc.className = 'accordion';
+    const hdr = document.createElement('button');
+    hdr.className = 'acc-header';
+    hdr.style.background = isOpen ? tc + '28' : '';
+    hdr.innerHTML = `<span class="acc-icon">${sec.icon}</span><span class="acc-label">${sec.label}</span><span class="acc-arrow">${isOpen?'▲':'▼'}</span>`;
+    const body = document.createElement('div');
+    body.className = 'acc-body' + (isOpen ? ' open' : '');
+    const txt = document.createElement('div');
+    txt.className = 'acc-text';
+    txt.textContent = session[sec.idx] || '—';
+    body.appendChild(txt);
+    hdr.onclick = () => {
+      state.openSections[openKey] = !state.openSections[openKey];
+      body.classList.toggle('open');
+      hdr.querySelector('.acc-arrow').textContent = state.openSections[openKey] ? '▲' : '▼';
+      hdr.style.background = state.openSections[openKey] ? tc + '28' : '';
+    };
+    acc.appendChild(hdr);
+    acc.appendChild(body);
+    scroll.appendChild(acc);
+  });
+
+  // Competencias
+  if (comp) {
+    const compKey = g.id + state.trim + 'comp';
+    if (!(compKey in state.openSections)) state.openSections[compKey] = false;
+    const isOpen = state.openSections[compKey];
+    const acc = document.createElement('div');
+    acc.className = 'accordion';
+    const hdr = document.createElement('button');
+    hdr.className = 'acc-header';
+    hdr.style.background = isOpen ? '#1E3A5F' : '';
+    hdr.innerHTML = `<span class="acc-icon">🧠</span><span class="acc-label">Competencias del Trimestre</span><span class="acc-arrow">${isOpen?'▲':'▼'}</span>`;
+    const body = document.createElement('div');
+    body.className = 'acc-body' + (isOpen ? ' open' : '');
+    const compData = [
+      {label:'Saber Pensar',    color:'#60A5FA', val:comp.sp},
+      {label:'Saber Resolver',  color:'#86EFAC', val:comp.src},
+      {label:'Saber Comunicar', color:'#FCD34D', val:comp.scm},
+      {label:'Saber Convivir',  color:'#F9A8D4', val:comp.scv},
+    ];
+    const grid = document.createElement('div');
+    grid.className = 'comp-grid';
+    compData.forEach(cd => {
+      const item = document.createElement('div');
+      item.className = 'comp-item';
+      item.innerHTML = `<div class="ci-label" style="color:${cd.color}">${cd.label}</div><div class="ci-text">${cd.val}</div>`;
+      grid.appendChild(item);
+    });
+    body.appendChild(grid);
+    hdr.onclick = () => {
+      state.openSections[compKey] = !state.openSections[compKey];
+      body.classList.toggle('open');
+      hdr.querySelector('.acc-arrow').textContent = state.openSections[compKey] ? '▲' : '▼';
+      hdr.style.background = state.openSections[compKey] ? '#1E3A5F' : '';
+    };
+    acc.appendChild(hdr);
+    acc.appendChild(body);
+    scroll.appendChild(acc);
+  }
+
+  // Notes
+  const noteKey = g.id + '_' + state.trim + '_' + wi;
+  const notesAcc = document.createElement('div');
+  notesAcc.className = 'accordion';
+  const notesHdr = document.createElement('div');
+  notesHdr.className = 'acc-header';
+  notesHdr.style.cursor = 'default';
+  notesHdr.innerHTML = `<span class="acc-icon">📝</span><span class="acc-label">Seguimiento / Notas de clase</span>`;
+  const notesBody = document.createElement('div');
+  notesBody.className = 'acc-body open';
+  const ta = document.createElement('textarea');
+  ta.className = 'notes-area';
+  ta.placeholder = 'Observaciones, asistencia, incidencias, ajustes...';
+  ta.value = state.notes[noteKey] || '';
+  ta.oninput = () => {
+    state.notes[noteKey] = ta.value;
+    try { localStorage.setItem('pwa_ef_notes', JSON.stringify(state.notes)); } catch(e){}
+  };
+  notesBody.appendChild(ta);
+  notesAcc.appendChild(notesHdr);
+  notesAcc.appendChild(notesBody);
+  scroll.appendChild(notesAcc);
+
+  // Footer
+  const foot = document.createElement('div');
+  foot.className = 'footer-info';
+  foot.textContent = `Luis Carlos Gómez Torres · ${g.sub} · 100 min/semana`;
+  scroll.appendChild(foot);
+
+  // Scroll to top
+  scroll.scrollTop = 0;
+}
+
+function changeWeek(delta) {
+  const tData = CALENDAR[state.trim];
+  const newIdx = state.weekIdx + delta;
+  if (newIdx < 0 || newIdx >= tData.weeks.length) return;
+  state.weekIdx = newIdx;
+  renderSession();
+}
+
+/* ═══════ RENDER CALENDAR ═══════ */
+function renderCalendar() {
+  const tData = CALENDAR[state.trim];
+  const tc = tData.color;
+  const ctx = state.todayCtx;
+
+  document.getElementById('cal-title').textContent = `${tData.label} — ${tData.weeks.length} semanas`;
+
+  const container = document.getElementById('cal-weeks');
+  container.innerHTML = '';
+
+  tData.weeks.forEach((w, i) => {
+    const div = document.createElement('div');
+    div.className = 'cal-week';
+    const isActive = state.weekIdx === i;
+    if (isActive) {
+      div.style.background = tc + '22';
+      div.style.borderColor = tc;
+    }
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'cal-wnum';
+    numDiv.style.background = isActive ? tc : 'rgba(255,255,255,0.1)';
+    numDiv.textContent = w.n;
+
+    const info = document.createElement('div');
+    info.className = 'cal-winfo';
+    info.innerHTML = `<div class="cal-wlabel" style="font-weight:${isActive?'bold':'normal'}">Semana ${w.n}</div><div class="cal-wrng">${w.rng}</div>`;
+
+    div.appendChild(numDiv);
+    div.appendChild(info);
+
+    // HOY badge
+    if (ctx.status === 'class' && ctx.trimKey === state.trim && ctx.weekIdx === i) {
+      const badge = document.createElement('div');
+      badge.className = 'badge-hoy';
+      badge.textContent = 'HOY';
+      div.appendChild(badge);
+    }
+
+    div.onclick = () => {
+      state.weekIdx = i;
+      renderSession();
+      showView('session');
+    };
+    container.appendChild(div);
+  });
+}
+
+/* ═══════ DEFAULT OPEN STATE FOR ACCORDIONS ═══════ */
+// sections already handled in renderSession with defOpen
+
+console.log('Planeador EF 2026 — listo ✅');
+</script>
+</body>
+</html>
